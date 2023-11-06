@@ -1,0 +1,53 @@
+---
+- name: Install required packages (Ubuntu)
+  apt:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - apache2
+    - php
+    - libapache2-mod-php
+    - build-essential
+    - libgd-dev
+    - openssl
+    - libssl-dev
+    - unzip
+    - python3-passlib
+  when: ansible_distribution == "Ubuntu"
+
+- name: Download Nagios Core source code
+  get_url:
+    url: "https://assets.nagios.com/downloads/nagioscore/releases/nagios-4.4.6.tar.gz"
+    dest: "/tmp/nagios.tar.gz"
+  when: ansible_distribution == "Ubuntu"
+
+- name: Extract Nagios Core
+  shell: "tar xzf /tmp/nagios.tar.gz -C /tmp"
+  when: ansible_distribution == "Ubuntu"
+
+- name: Compile and install Nagios Core
+  shell: |
+    cd /tmp/nagios-4.4.6 
+    ./configure
+    make all
+    make install
+    make install-init
+    make install-config 
+    make install-commandmode
+  notify:
+    - Restart Nagios
+
+- name: Create Nagios web user
+  user:
+    name: nagiosadmin
+    comment: Nagios Admin User
+    groups: apache
+  when: ansible_distribution == "Ubuntu"
+
+- name: Set Nagios web password
+  htpasswd:
+    path: /usr/local/nagios/etc/htpasswd.users
+    name: nagiosadmin
+    password: abgl061122
+  when: ansible_distribution == "Ubuntu"
+

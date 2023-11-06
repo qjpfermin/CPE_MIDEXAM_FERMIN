@@ -1,0 +1,153 @@
+---
+    - name: Install Java
+      apt:
+        name: openjdk-11-jre
+        state: present
+      when: ansible_distribution == "Ubuntu"
+
+    - name: Add Elastic APT GPG key
+      apt_key:
+        url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+        state: present
+      when: ansible_distribution == "Ubuntu"
+
+    - name: Add Elastic APT repository
+      apt_repository:
+        repo: deb https://artifacts.elastic.co/packages/7.x/apt stable main
+        state: present
+      when: ansible_distribution == "Ubuntu"
+
+    - name: Install Elastic Stack
+      apt:
+        name: 
+          - elasticsearch
+          - kibana
+          - logstash
+        state: present
+      when: ansible_distribution == "Ubuntu"
+
+    - name: Start and enable Elasticsearch service
+      service:
+        name: elasticsearch
+        state: started
+        enabled: yes
+      when: ansible_distribution == "Ubuntu"
+
+    - name: Start and enable Kibana
+      service:
+        name: kibana
+        state: started
+        enabled: yes
+      when: ansible_distribution == "Ubuntu"
+
+    - name: Start and enable Logstash
+      service:
+        name: logstash
+        state: started
+        enabled: yes
+      when: ansible_distribution == "Ubuntu"
+
+    - name: Install necessary packages
+      apt:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - software-properties-common
+        - wget
+      when: ansible_distribution == 'Ubuntu'
+
+    - name: Add Grafana APT repository
+      apt_repository:
+        repo: deb https://packages.grafana.com/oss/deb stable main
+        state: present
+        update_cache: yes
+      when: ansible_distribution == 'Ubuntu'
+
+    - name: Import Grafana GPG key
+      apt_key:
+        url: https://packages.grafana.com/gpg.key
+        state: present
+      when: ansible_distribution == 'Ubuntu'
+
+    - name: Install Grafana
+      apt:
+        name: grafana
+        state: present
+        update_cache: yes
+
+    - name: Start and enable Grafana service
+      systemd:
+        name: grafana-server
+        enabled: yes
+        state: started
+
+    - name: Install required packages
+      apt:
+        name: 
+          - prometheus
+          - prometheus-node-exporter
+      become: yes
+      when: ansible_distribution == "Ubuntu"
+
+    - name: Start and enable Prometheus
+      systemd:
+        name: prometheus
+        enabled: yes
+        state: started
+      become: yes
+      when: ansible_distribution == "Ubuntu"
+
+    - name: Start and enable Node Exporter
+      systemd:
+        name: prometheus-node-exporter
+        enabled: yes
+        state: started
+      become: yes
+      when: ansible_distribution == "Ubuntu"
+
+    - name: Install InfluxDB
+      apt:
+        name: influxdb
+        state: present
+      when: ansible_distribution == "Ubuntu"
+
+    - name: Start InfluxDB service
+      service:
+        name: influxdb
+        state: started
+        enabled: yes
+      when: ansible_distribution == "Ubuntu"
+
+    - name: copy default html file for site
+      tags: apache, apache2, httpd
+      copy:
+        src: default_site.html
+        dest: /var/www/html/index.html
+        owner: root
+        group: root
+        mode: 0644
+      when: ansible_distribution == "Ubuntu"
+
+    - name: install apache and php for Ubuntu servers
+      tags: apache,apache2,ubuntu
+      apt:
+        name:
+          - apache2
+          - libapache2-mod-php
+        state: latest
+        update_cache: yes
+      when: ansible_distribution == "Ubuntu"
+
+    - name: install mariadb package (Ubuntu)
+      tags: db, mariadb,ubuntu
+      apt:
+        name: mariadb-server
+        state: latest
+      when: ansible_distribution == "Ubuntu"
+
+    - name: "Mariadb- Restarting/Enabling"
+      service:
+        name: mariadb
+        state: restarted
+        enabled: true
+      when: ansible_distribution == "Ubuntu"

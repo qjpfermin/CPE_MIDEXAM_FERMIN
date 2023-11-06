@@ -1,0 +1,152 @@
+---
+    - name: Install Java
+      dnf:
+        name: java-1.8.0-openjdk
+        state: present
+      become: yes
+      when: ansible_distribution == "Debian"
+
+    - name: Import Elasticsearch GPG key
+      rpm_key:
+        key: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+      become: yes
+      when: ansible_distribution == "Debian"
+
+    - name: Add Elasticsearch repository
+      yum_repository:
+        name: elasticsearch
+        description: Elasticsearch Yum Repo
+        baseurl: https://artifacts.elastic.co/packages/7.x/yum
+        gpgcheck: yes
+        gpgkey: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+        enabled: yes
+      become: yes
+      when: ansible_distribution == "Debian"
+
+    - name: Install Elasticsearch, Kibana, Logstash
+      dnf:
+        name: 
+          - elasticsearch
+          - kibana
+          - logstash
+        state: present
+      become: yes
+      when: ansible_distribution == "Debian"
+
+    - name: Start and enable Elasticsearch service
+      systemd:
+        name: elasticsearch
+        state: started
+        enabled: yes
+      when: ansible_distribution == "Debian"
+
+    - name: Start and enable kibana
+      systemd:
+        name: kibana
+        state: started
+        enabled: yes
+      when: ansible_distribution == "Debian"
+
+    - name: Start and enable Logstash
+      systemd:
+        name: logstash
+        state: started
+        enabled: yes
+      when: ansible_distribution == "Debian"
+
+    - name: Install Prometheus
+      shell: |
+        useradd --no-create-home --shell /bin/false prometheus
+        wget https://github.com/prometheus/prometheus/releases/download/v2.30.3/prometheus-2.30.3.linux-amd64.tar.gz
+        tar xvf prometheus-2.30.3.linux-amd64.tar.gz
+        cp prometheus-2.30.3.linux-amd64/prometheus /usr/local/bin/
+        cp prometheus-2.30.3.linux-amd64/promtool /usr/local/bin/
+        chown prometheus:prometheus /usr/local/bin/prometheus
+        chown prometheus:prometheus /usr/local/bin/promtool
+        mkdir /etc/prometheus
+        cp -r prometheus-2.30.3.linux-amd64/consoles /etc/prometheus
+        cp -r prometheus-2.30.3.linux-amd64/console_libraries /etc/prometheus
+        chown -R prometheus:prometheus /etc/prometheus
+        mkdir /var/lib/prometheus
+        chown prometheus:prometheus /var/lib/prometheus
+      args:
+        creates: /usr/local/bin/prometheus
+      notify: Start Prometheus
+      when: ansible_distribution == "CentOS"
+
+    - name: Install Grafana
+      yum:
+        name: grafana
+        state: present
+      notify: Start Grafana
+      when: ansible_distribution == "CentOS"
+
+    - name: Add InfluxDB repository
+      yum_repository:
+        name: influxdb
+        description: InfluxDB Repository - RHEL $releasever
+        baseurl: https://repos.influxdata.com/rhel/$releasever/$basearch/stable
+        gpgcheck: 1
+        gpgkey: https://repos.influxdata.com/influxdb.key
+        enabled: 1
+      when: ansible_distribution == "CentOS"
+
+    - name: Install InfluxDB
+      yum:
+        name: influxdb
+        state: present
+      notify: Start InfluxDB
+      when: ansible_distribution == "CentOS"
+
+    - name: Start Prometheus
+      systemd:
+        name: prometheus
+        enabled: yes
+        state: started
+      when: ansible_distribution == "CentOS"
+
+    - name: Start Grafana
+      systemd:
+        name: grafana-server
+        enabled: yes
+        state: started
+      when: ansible_distribution == "CentOS"
+
+    - name: Start InfluxDB
+      systemd:
+        name: influxdb
+        enabled: yes
+        state: started
+      when: ansible_distribution == "CentOS"
+
+    - name: install apache and php for CentOS servers
+      tags: apache,apache2,httpd
+      dnf:
+        name:
+          - httpd
+          - php
+        state: latest
+      when: ansible_distribution == "CentOS"
+
+    - name: start httpd (CentOS)
+      tags: apache,centos, httpd
+      service:
+        name: httpd
+        state: started
+        enabled: true
+      when: ansible_distribution == "CentOS"
+
+    - name: install mariadb package (CentOS)
+      tags: centos,db,mariadb
+      yum:
+        name: mariadb-server
+        state: latest
+      when: ansible_distribution == "CentOS"
+  
+    - name: "Mariadb- Restarting/Enabling"
+      service:
+        name: mariadb
+        state: restarted
+        enabled: true
+      when: ansible_distribution == "CentOS"
+

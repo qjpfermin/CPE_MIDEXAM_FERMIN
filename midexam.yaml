@@ -1,0 +1,41 @@
+---
+- hosts: all
+  become: true
+  pre_tasks:
+  
+  - name: install updates (CentOS)
+    tags: always
+    dnf:
+      update_cache: yes
+    changed_when: false
+    when: ansible_distribution == "Debian"
+
+  - name: install updates (Ubuntu)
+    tags: always
+    apt:
+      update_cache: yes
+    changed_when: false
+    when: ansible_distribution == "Ubuntu"
+
+- hosts: all
+  become: true
+  roles: 
+    - base
+
+- hosts: ubuntu
+  become: true
+  roles:
+    - ubuntu
+    - nagios
+
+  handlers:
+    - name: Restart Nagios
+      service:
+        name: nagios
+        state: restarted
+
+
+- hosts: centos
+  become: true
+  roles:
+    - centos
